@@ -1,1 +1,7 @@
-pw
+ls
+ls
+ls
+ls
+ls
+ls
+history

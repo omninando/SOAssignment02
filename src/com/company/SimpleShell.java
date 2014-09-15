@@ -1,15 +1,19 @@
 package com.company;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 
 public class SimpleShell
 {
 	public static void main(String[] args) throws java.io.IOException,CommandException {
-		String commandLine;
+        String commandLine;
 		BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
-        BufferedWriter writer = null;
+        ArrayList<String> history = new ArrayList<String>();
+		HistoryManagement hm = new HistoryManagement();
+        history = hm.load(history);
 
         // we break out with <control><C>
         while (true) {
@@ -29,46 +33,40 @@ public class SimpleShell
                 System.exit(0);
             }
 
-            ArrayList<String> history = new ArrayList<String>();
             ArrayList<String> parameters = new ArrayList<String>();
             String item = "";
             String[] lineSplit = commandLine.split(" ");
 
             //Using collections to add parameters given a line splitter
             Collections.addAll(parameters, lineSplit);
+
             //Using collections to add the hole line to the history
             Collections.addAll(history,commandLine.concat(item));
 
-            //Saving every command in a text file
-            try {
-                //sddkasjdka
-                //create a temporary file
-                File logFile = new File("history.txt");
-                writer = new BufferedWriter(new FileWriter(logFile));
+            if (parameters.get(0).compareTo("history")==0){
+                for (int i = 0; i < history.size(); i++) {
+                    System.out.println(i+1 +" " + history.get(i));
+                }
+            }else {
+                // create the process with the list of parameters
+                ProcessBuilder pb = new ProcessBuilder(parameters);
+                Process process = pb.start();
 
-                for (String aHistory : history) {  writer.write(aHistory); }
-            } catch (Exception e) { e.printStackTrace();
-            } finally {
-                try {// Close the writer regardless of what happens...
-                    assert writer != null;
-                    writer.close();
-                } catch (Exception ignored) { }
+                // get the output stream
+                InputStream is = process.getInputStream();
+                InputStreamReader isr = new InputStreamReader(is);
+                BufferedReader br = new BufferedReader(isr);
+
+                // read what is returned by the command
+                String aLine;
+                while ((aLine = br.readLine()) != null) System.out.println(aLine);
+
+                br.close();
             }
 
-            // create the process with the list of parameters
-            ProcessBuilder pb = new ProcessBuilder(parameters);
-            Process process = pb.start();
 
-            // get the output stream
-            InputStream is = process.getInputStream();
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-
-            // read what is returned by the command
-            String aLine;
-            while ((aLine = br.readLine()) != null) System.out.println(aLine);
-
-            br.close();
+            //Saving every command in a text file
+            hm.save(history);
         }
     }
 }
