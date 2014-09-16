@@ -41,7 +41,7 @@ public class SimpleShell
             Collections.addAll(parameters, lineSplit);
 
             //Using collections to add the hole line to the history
-            Collections.addAll(history,commandLine.concat(item));
+            history.add(commandLine.concat(item));
 
             if (parameters.get(0).compareTo("history")==0){
                 for (int i = 0; i < history.size(); i++) {
