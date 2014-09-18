@@ -45,6 +45,10 @@ public class SimpleShell
                     for (int i = 0; i < history.size(); i++) System.out.println(i+1 + " " + history.get(i));
                     break;
 
+                case "^C": // If the user type Ctrl+C, kills the program
+                    System.exit(0);
+                    break;
+
                 case "cd":
                     cdCommand(parameters, directory);
                     break;
