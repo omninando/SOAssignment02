@@ -4,7 +4,14 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 
-
+/**
+ * Edited by Fernando de Almeida Coelho and Ana Luiza Motta Gomes
+ * on 15/09/14.
+ *
+ * The SimpleShell class has the program to run a Shell Interface
+ * created using  Java Language. This  application was made as an
+ * Assignment for CSCI 215 Operating Systems at Clark University.
+ */
 public class SimpleShell
 {
     public static void main(String[] args) throws java.io.IOException
@@ -13,6 +20,7 @@ public class SimpleShell
         ArrayList<String> history = new ArrayList<String>();
 		HistoryManagement hm = new HistoryManagement();
         ProcessBuilder directory = new ProcessBuilder(null,null);
+        CommandManagement cm = new CommandManagement();
         String commandLine;
         history = hm.load(history);
 
@@ -27,130 +35,53 @@ public class SimpleShell
                 System.exit(0);
             }
 
-            ArrayList<String> parameters = new ArrayList<String>();
+            ArrayList<String> parameters = new ArrayList<>();
             String item = "";
             String[] lineSplit = commandLine.split(" ");
 
             Collections.addAll(parameters, lineSplit); // Using collections to add parameters given a line splitter
 
             history.add(commandLine.concat(item)); // Adding the whole line to the history
-            switch (parameters.get(0)) { // Comparing if the first parameter is 'history', 'cd' or the default behavior
-                case "history":
-                    for (int i = 0; i < history.size(); i++) System.out.println(i+1 + " " + history.get(i));
-                    break;
 
-                case "^C": // If the user type Ctrl+C, kills the program
-                    System.exit(0);
-                    break;
 
-                case "cd":
-                    cdCommand(parameters, directory);
-                    break;
-
-                default:
-                    ProcessBuilder pb = new ProcessBuilder(parameters); // create the process with the list of parameters
-                    if (directory.directory()!=null) pb.directory(directory.directory());
-                    outputStream(pb); // get the output stream
+            if (parameters.get(0).charAt(0) == '!') // Option to access history by typing "! + number"
+            {
+                try {
+                    cm.accessHistoryCommands(parameters, history); // Calling the method to access history by typing "! + number"
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                }
             }
+            try {
+                // Comparing if the first parameter is '^C', 'history', 'cd' or the default behavior
+                switch (parameters.get(0).toLowerCase()) { // It is case sensitive
+                    case "^C": // If the user type Ctrl+C, kills the program
+                        System.out.println("Bye!");
+                        System.exit(0);
+                        break;
 
+                    case "history": // Method to deal with the history command
+                        for (int i = 0; i < history.size(); i++)
+                        {
+                            System.out.println(i+1 + " " + history.get(i));
+                        }
+                        break;
+
+                    case "cd": // Method to deal with the cd command
+                        cm.cdCommand(parameters, directory);
+                        break;
+
+                    default: // deal with other commands
+                        ProcessBuilder pb = new ProcessBuilder(parameters); // create the process with the list of parameters
+                        if (directory.directory()!=null) {
+                            pb.directory(directory.directory());
+                        }
+                        cm.outputStream(pb); // get the output stream
+                }
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
             hm.save(history); // Saving all command lines in this session in a text file
         }
-    }
-
-    /**
-     * Method cdCommand() receives  Parameters and the Directories
-     * to be changed, change the directory if necessary then calls
-     * outputStream() to start the process.
-     */
-    public static void cdCommand(ArrayList<String> parameters, ProcessBuilder directory) throws IOException
-    {
-    	if (parameters.size()!=1){
-
-        if (parameters.get(1).compareTo("..")==0)
-        {
-            ProcessBuilder pb = new ProcessBuilder(parameters);
-            pb.directory(new File(System.getProperty("user.dir")).getParentFile());
-
-            if (directory.directory() != null) directory.directory(directory.directory().getParentFile());
-            else  directory.directory(new File(System.getProperty("user.dir")).getParentFile());
-
-            outputStream(pb); // get the output stream
-        } else if (parameters.get(1).contains("/")) {
-            ProcessBuilder pb = new ProcessBuilder(parameters); // create the process with the list of parameters
-
-            if (directory.directory() != null) directory.directory(directory.directory().getParentFile());
-            else  directory.directory(new File(System.getProperty("user.dir")).getParentFile());
-
-            String path = parameters.get(1);
-            
-            try{
-
-                validateFile(directory, pb, path,parameters.get(1));
-
-            } catch (IOException e){
-            	System.out.println(e.getMessage());
-            }
-            
-            
-            outputStream(pb); // get the output stream
-        } else{
-            ProcessBuilder pb = new ProcessBuilder(parameters); // create the process with the list of parameters
-
-            if (directory.directory() != null) pb.directory(directory.directory());
-
-            String path = System.getProperty("user.dir") + "/" + parameters.get(1);
-            
-            try{
-
-                validateFile(directory, pb, path,parameters.get(1));
-
-            } catch (IOException e){
-            	System.out.println(e.getMessage());
-            }
-            
-            
-            outputStream(pb); // get the output stream
-        }
-    	}
-    }
-    /**
-     * 
-     * @param directory
-     * @param pb
-     * @param path
-     * @param parameter
-     * @throws IOException if the directory doesn't exist
-     */
-    	
-
-	private static void validateFile(ProcessBuilder directory,
-			ProcessBuilder pb, String path,String parameter) throws IOException {
-		if (new File(path).exists()) {
-		    directory.directory(new File(path));
-		    pb.directory(new File(path));
-		    
-		}else {
-			throw new IOException("cd: " +  parameter + ": no such file or directory");
-		}
-	}
-
-
-    /**
-     * Method outputStream() receives the ProcessBuilder and
-     * start  the process itself and outputs the result from
-     * the process.
-     */
-    public static void outputStream(ProcessBuilder pb) throws IOException
-    {
-        Process process = pb.start();
-
-        InputStream is = process.getInputStream(); // get the output stream
-        InputStreamReader isr = new InputStreamReader(is);
-        BufferedReader br = new BufferedReader(isr);
-
-        String aLine; // read what is returned by the command
-        while ((aLine = br.readLine()) != null) System.out.println(aLine);
-
-        br.close();
     }
 }
